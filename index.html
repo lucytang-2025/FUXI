@@ -1574,8 +1574,9 @@
             
             
             // 自动同步：下载云端数据并合并
-            const autoDownload = async () => {
-                if (!SYNC_CONFIG.gistId) return;
+const autoDownload = async () => {
+    const config = getSyncConfig();  // ✅ 正确
+    if (!config.gistId) return;
                 
                 try {
                     const cloudData = await downloadFromGist();
@@ -1599,43 +1600,7 @@
                     console.error('自动下载失败:', error);
                     return false;
                 }
-            };
-// 自动上传：将本地数据同步到云端
-const autoUpload = async () => {
-    const config = getSyncConfig();
-    if (!config.token || !config.gistId) {
-        console.log('未配置同步账号，跳过自动上传');
-        return false;
-    }
-    
-    try {
-        // 准备要上传的数据
-        const tasks = await dataStorage.getAllTasks();
-        const recordings = await dataStorage.getAllRecordings();
-        const photos = await dataStorage.getAllPhotos();
-        const feedbacks = await dataStorage.getAllFromStore('feedbacks');
-        
-        const uploadData = {
-            version: '3.0',
-            lastSyncTime: new Date().toISOString(),
-            tasks: tasks,
-            recordings: recordings,
-            photos: photos,
-            feedbacks: feedbacks
-        };
-        
-        const success = await uploadToGist(uploadData);
-        if (success) {
-            console.log('自动同步到云端成功');
-            localStorage.setItem('tasks_last_modified', uploadData.lastSyncTime);
-        }
-        return success;
-    } catch (error) {
-        console.error('自动上传失败:', error);
-        return false;
-    }
-};
-            
+            };            
             // 合并任务数据（保留本地未同步的打卡记录）
             const mergeTasks = (localTasks, cloudTasks) => {
                 const taskMap = new Map();
@@ -1691,6 +1656,40 @@ const autoUpload = async () => {
                     }
                 }
             };
+// 自动上传（新增）
+const autoUpload = async () => {
+    const config = getSyncConfig();
+    if (!config.token || !config.gistId) {
+        console.log('未配置同步账号，跳过自动上传');
+        return false;
+    }
+    
+    try {
+        const tasks = await dataStorage.getAllTasks();
+        const recordings = await dataStorage.getAllRecordings();
+        const photos = await dataStorage.getAllPhotos();
+        const feedbacks = await dataStorage.getAllFromStore('feedbacks');
+        
+        const uploadData = {
+            version: '3.0',
+            lastSyncTime: new Date().toISOString(),
+            tasks: tasks,
+            recordings: recordings,
+            photos: photos,
+            feedbacks: feedbacks
+        };
+        
+        const success = await uploadToGist(uploadData);
+        if (success) {
+            console.log('自动同步到云端成功');
+            localStorage.setItem('tasks_last_modified', uploadData.lastSyncTime);
+        }
+        return success;
+    } catch (error) {
+        console.error('自动上传失败:', error);
+        return false;
+    }
+};
             
             // 手动下载（强制下载云端数据）
             const manualDownload = async () => {
